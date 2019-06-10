@@ -1,6 +1,10 @@
 package com.example.xan.mobileplayer.activity;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -15,6 +19,7 @@ import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.example.xan.mobileplayer.R;
+import com.example.xan.mobileplayer.utils.Utils;
 
 import androidx.annotation.Nullable;
 
@@ -22,6 +27,8 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
 
     private VideoView vv_videoview;
     private Uri uri;
+    private Utils utils;
+    private MyReceiver myReceiver;
 
     private LinearLayout llTop;
     private TextView tvVideoName;
@@ -117,6 +124,8 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        initData();
+
         findViews();
 
 
@@ -129,6 +138,55 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         }
 
         vv_videoview.setMediaController(new MediaController(this));
+    }
+
+    private void initData() {
+        utils= new Utils();
+
+        myReceiver = new MyReceiver();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(myReceiver,intentFilter);
+    }
+
+    class MyReceiver extends BroadcastReceiver{
+
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int level = intent.getIntExtra("level",0);
+            setBatteryLevel(level);
+        }
+    }
+
+    private void setBatteryLevel(int level){
+
+        if(level <= 0){
+            ivBattary.setBackgroundResource(R.drawable.ic_battery_0);
+
+        }else if(level <= 10){
+            ivBattary.setBackgroundResource(R.drawable.ic_battery_10);
+
+        }else if(level <= 20){
+            ivBattary.setBackgroundResource(R.drawable.ic_battery_20);
+
+        }else if(level <= 40){
+            ivBattary.setBackgroundResource(R.drawable.ic_battery_40);
+
+        }else if(level <= 60){
+            ivBattary.setBackgroundResource(R.drawable.ic_battery_60);
+
+        }else if(level <= 80){
+            ivBattary.setBackgroundResource(R.drawable.ic_battery_80);
+
+        }else if(level <= 100){
+            ivBattary.setBackgroundResource(R.drawable.ic_battery_100);
+
+        }else {
+            ivBattary.setBackgroundResource(R.drawable.ic_battery_100);
+
+        }
+
     }
 
     private void setListener() {
@@ -193,5 +251,16 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         public void onStopTrackingTouch(SeekBar seekBar) {
 
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(myReceiver != null){
+            unregisterReceiver(myReceiver);
+            myReceiver = null;
+
+        }
+
+        super.onDestroy();
     }
 }
