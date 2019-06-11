@@ -113,6 +113,7 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
             finish();   // 结束当前的Activity
         } else if ( v == btnVideoPre ) {
             // Handle clicks for btnVideoPre
+            playPreVideo();
         } else if ( v == btnVideoPausePlay ) {
             // Handle clicks for btnVideoPausePlay
             if(vv_videoview.isPlaying()){
@@ -130,6 +131,25 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
 
         } else if ( v == btnSwitchScreen ) {
             // Handle clicks for btnSwitchScreen
+        }
+    }
+
+    private void playPreVideo() {
+
+        if(mediaItems != null && mediaItems.size() > 0){
+
+            videoIndex --;
+            if(videoIndex >= 0){
+                MediaItem mediaItem = mediaItems.get(videoIndex);
+                tvVideoName.setText(mediaItem.getName());
+                vv_videoview.setVideoPath(mediaItem.getData());
+
+                setButtonState();
+            }
+
+        }else if(uri != null){
+
+            setButtonState();
         }
     }
 
@@ -158,13 +178,32 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
 
                 setEnable(false);
 
+            }else if(mediaItems.size() == 2){
+
+                if(videoIndex == 0){
+                    btnVideoPre.setBackgroundResource(R.drawable.btn_pre_gray);
+                    btnVideoPre.setEnabled(false);
+                    btnVideoNext.setBackgroundResource(R.drawable.btn_video_next_selector);
+                    btnVideoNext.setEnabled(true);
+
+                }else if(videoIndex == (mediaItems.size()-1)){
+                    btnVideoPre.setBackgroundResource(R.drawable.btn_video_pre_selector);
+                    btnVideoPre.setEnabled(true);
+                    btnVideoNext.setBackgroundResource(R.drawable.btn_next_gray);
+                    btnVideoNext.setEnabled(false);
+                }else {
+
+                    setEnable(true);
+                }
             }else {
 
                 if(videoIndex == 0){
                     btnVideoPre.setBackgroundResource(R.drawable.btn_pre_gray);
                     btnVideoPre.setEnabled(false);
 
+
                 }else if(videoIndex == (mediaItems.size()-1)){
+
                     btnVideoNext.setBackgroundResource(R.drawable.btn_next_gray);
                     btnVideoNext.setEnabled(false);
                 }else {
@@ -358,7 +397,8 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
     private class MyOnCompletionListener implements MediaPlayer.OnCompletionListener {
         @Override
         public void onCompletion(MediaPlayer mp) {
-            Toast.makeText(SystemVideoPlayer.this,"播放完了："+uri, Toast.LENGTH_SHORT).show();
+            playNextVideo();
+            //Toast.makeText(SystemVideoPlayer.this,"播放完了："+uri, Toast.LENGTH_SHORT).show();
         }
     }
 
