@@ -8,11 +8,14 @@ import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.MediaController;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +27,8 @@ import com.example.xan.mobileplayer.utils.Utils;
 import androidx.annotation.Nullable;
 
 public class SystemVideoPlayer extends Activity implements View.OnClickListener {
+
+    private static final int PROGRESS =1;
 
     private VideoView vv_videoview;
     private Uri uri;
@@ -119,6 +124,26 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
     }
 
 
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case PROGRESS:
+
+                    int currentPosition = vv_videoview.getCurrentPosition();
+                    seekbarVideo.setProgress(currentPosition);
+                    tvCurrenttime.setText(utils.stringForTime(currentPosition));
+
+                    handler.removeMessages(PROGRESS);
+                    handler.sendEmptyMessageDelayed(PROGRESS,1000);
+
+                    break;
+
+            }
+        }
+    };
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -207,6 +232,13 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         @Override
         public void onPrepared(MediaPlayer mp) {
             vv_videoview.start();
+
+            int duration = vv_videoview.getDuration();
+            seekbarVideo.setMax(duration);
+            tvVideoDuration.setText(utils.stringForTime(duration));
+
+            handler.sendEmptyMessage(PROGRESS);
+
         }
     }
 
