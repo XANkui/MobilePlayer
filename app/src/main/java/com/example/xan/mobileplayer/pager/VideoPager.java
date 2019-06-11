@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
@@ -98,8 +99,15 @@ public class VideoPager extends BasePager {
             intent.setDataAndType(Uri.parse(mediaItem.getData()),"video/*");
             context.startActivity(intent);*/
 
-            Intent intent = new Intent(context, SystemVideoPlayer.class);
+            /*Intent intent = new Intent(context, SystemVideoPlayer.class);
             intent.setDataAndType(Uri.parse(mediaItem.getData()),"video/*");
+            context.startActivity(intent);*/
+
+            Intent intent = new Intent(context, SystemVideoPlayer.class);
+            Bundle bundle = new Bundle();
+            bundle.putSerializable("videolist",mediaItems);
+            intent.putExtras(bundle);
+            intent.putExtra("position", position);
             context.startActivity(intent);
         }
     }

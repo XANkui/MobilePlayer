@@ -22,7 +22,12 @@ import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.example.xan.mobileplayer.R;
+import com.example.xan.mobileplayer.domain.MediaItem;
 import com.example.xan.mobileplayer.utils.Utils;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 
 import androidx.annotation.Nullable;
 
@@ -34,6 +39,8 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
     private Uri uri;
     private Utils utils;
     private MyReceiver myReceiver;
+    ArrayList<MediaItem> mediaItems;
+    private int videoIndex;
 
     private LinearLayout llTop;
     private TextView tvVideoName;
@@ -103,6 +110,7 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
             // Handle clicks for btnVideoSwitchPlayer
         } else if ( v == btnVideoExit ) {
             // Handle clicks for btnVideoExit
+            finish();   // 结束当前的Activity
         } else if ( v == btnVideoPre ) {
             // Handle clicks for btnVideoPre
         } else if ( v == btnVideoPausePlay ) {
@@ -118,8 +126,71 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
             }
         } else if ( v == btnVideoNext ) {
             // Handle clicks for btnVideoNext
+            playNextVideo();
+
         } else if ( v == btnSwitchScreen ) {
             // Handle clicks for btnSwitchScreen
+        }
+    }
+
+    private void playNextVideo() {
+        if(mediaItems != null && mediaItems.size() > 0){
+
+            videoIndex ++;
+            if(videoIndex < mediaItems.size()){
+                MediaItem mediaItem = mediaItems.get(videoIndex);
+                tvVideoName.setText(mediaItem.getName());
+                vv_videoview.setVideoPath(mediaItem.getData());
+
+                setButtonState();
+            }
+
+        }else if(uri != null){
+
+            setButtonState();
+        }
+    }
+
+    private void setButtonState() {
+        if(mediaItems != null && mediaItems.size() > 0){
+
+            if(mediaItems.size() == 1){
+
+                setEnable(false);
+
+            }else {
+
+                if(videoIndex == 0){
+                    btnVideoPre.setBackgroundResource(R.drawable.btn_pre_gray);
+                    btnVideoPre.setEnabled(false);
+
+                }else if(videoIndex == (mediaItems.size()-1)){
+                    btnVideoNext.setBackgroundResource(R.drawable.btn_next_gray);
+                    btnVideoNext.setEnabled(false);
+                }else {
+
+                    setEnable(true);
+                }
+            }
+
+        }else if(uri != null){
+
+            setEnable(false);
+        }
+    }
+
+    private void setEnable(boolean isEnable) {
+        if(isEnable == true){
+            btnVideoPre.setBackgroundResource(R.drawable.btn_video_pre_selector);
+            btnVideoPre.setEnabled(true);
+            btnVideoNext.setBackgroundResource(R.drawable.btn_video_next_selector);
+            btnVideoNext.setEnabled(true);
+
+        }else {
+            btnVideoPre.setBackgroundResource(R.drawable.btn_pre_gray);
+            btnVideoPre.setEnabled(false);
+            btnVideoNext.setBackgroundResource(R.drawable.btn_next_gray);
+            btnVideoNext.setEnabled(false);
         }
     }
 
@@ -135,6 +206,8 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
                     seekbarVideo.setProgress(currentPosition);
                     tvCurrenttime.setText(utils.stringForTime(currentPosition));
 
+                    tvSystemTime.setText(getSystemTime());
+
                     handler.removeMessages(PROGRESS);
                     handler.sendEmptyMessageDelayed(PROGRESS,1000);
 
@@ -144,6 +217,11 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         }
     };
 
+    private String getSystemTime(){
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH：mm:ss");
+        return simpleDateFormat.format(new Date());
+    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -156,13 +234,39 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
 
         setListener();
 
-        uri = getIntent().getData();
-        if(uri != null){
+        getData();
 
-            vv_videoview.setVideoURI(uri);
-        }
+        setData();
 
         vv_videoview.setMediaController(new MediaController(this));
+    }
+
+    private void setData() {
+
+        if(mediaItems !=null && mediaItems.size() >0){
+            MediaItem mediaItem = mediaItems.get(videoIndex);
+            tvVideoName.setText(mediaItem.getName());
+            vv_videoview.setVideoPath(mediaItem.getData());
+        }else if(uri != null){
+            tvVideoName.setText(uri.toString());
+            vv_videoview.setVideoURI(uri);
+        }else{
+            Toast.makeText(this,"没有视频数据，请传递相关数据",Toast.LENGTH_SHORT).show();
+        }
+
+        setButtonState();
+    }
+
+    private void getData() {
+        uri = getIntent().getData();
+
+        if(mediaItems == null){
+            mediaItems = new ArrayList<>();
+        }
+        mediaItems = (ArrayList<MediaItem>) getIntent().getSerializableExtra("videolist");
+        videoIndex = getIntent().getIntExtra("position",0);
+
+
     }
 
     private void initData() {
