@@ -10,12 +10,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.MediaController;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,6 +37,7 @@ import androidx.annotation.Nullable;
 public class SystemVideoPlayer extends Activity implements View.OnClickListener {
 
     private static final int PROGRESS =1;
+    private static final int HIDE_RLMEDIACONTROLLER =2;
 
     private VideoView vv_videoview;
     private Uri uri;
@@ -41,7 +45,10 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
     private MyReceiver myReceiver;
     ArrayList<MediaItem> mediaItems;
     private int videoIndex;
+    private GestureDetector gestureDetector;
+    private boolean isShowRLMediaController = false;
 
+    private RelativeLayout rl_media_Controller;
     private LinearLayout llTop;
     private TextView tvVideoName;
     private ImageView ivBattary;
@@ -84,7 +91,7 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         btnVideoPausePlay = (Button)findViewById( R.id.btn_video_pause_play );
         btnVideoNext = (Button)findViewById( R.id.btn_video_next );
         btnSwitchScreen = (Button)findViewById( R.id.btn_switch_screen );
-
+        rl_media_Controller = findViewById(R.id.rl_media_controller);
         vv_videoview = findViewById(R.id.vv_videoview);
 
         btnVideoVoice.setOnClickListener( this );
@@ -116,21 +123,28 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
             playPreVideo();
         } else if ( v == btnVideoPausePlay ) {
             // Handle clicks for btnVideoPausePlay
-            if(vv_videoview.isPlaying()){
-                vv_videoview.pause();
-                btnVideoPausePlay.setBackgroundResource(R.drawable.btn_video_play_selector);
-
-            }else {
-
-                vv_videoview.start();
-                btnVideoPausePlay.setBackgroundResource(R.drawable.btn_video_pause_selector);
-            }
+            startAndPause();
         } else if ( v == btnVideoNext ) {
             // Handle clicks for btnVideoNext
             playNextVideo();
 
         } else if ( v == btnSwitchScreen ) {
             // Handle clicks for btnSwitchScreen
+        }
+
+        handler.removeMessages(HIDE_RLMEDIACONTROLLER);
+        handler.sendEmptyMessageDelayed(HIDE_RLMEDIACONTROLLER,4000);
+    }
+
+    private void startAndPause() {
+        if(vv_videoview.isPlaying()){
+            vv_videoview.pause();
+            btnVideoPausePlay.setBackgroundResource(R.drawable.btn_video_play_selector);
+
+        }else {
+
+            vv_videoview.start();
+            btnVideoPausePlay.setBackgroundResource(R.drawable.btn_video_pause_selector);
         }
     }
 
@@ -239,6 +253,9 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             switch (msg.what){
+                case HIDE_RLMEDIACONTROLLER:
+                    hideRLMediaController();
+                    break;
                 case PROGRESS:
 
                     int currentPosition = vv_videoview.getCurrentPosition();
@@ -294,6 +311,8 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         }
 
         setButtonState();
+
+        hideRLMediaController();
     }
 
     private void getData() {
@@ -315,6 +334,40 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
         registerReceiver(myReceiver,intentFilter);
+
+        gestureDetector = new GestureDetector(this,new GestureDetector.SimpleOnGestureListener(){
+
+
+            @Override
+            public void onLongPress(MotionEvent e) {
+                super.onLongPress(e);
+                Toast.makeText(SystemVideoPlayer.this,"我被长按了", Toast.LENGTH_SHORT).show();
+                startAndPause();
+
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                Toast.makeText(SystemVideoPlayer.this,"我被双击了", Toast.LENGTH_SHORT).show();
+                return super.onDoubleTap(e);
+            }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                Toast.makeText(SystemVideoPlayer.this,"我被单击了", Toast.LENGTH_SHORT).show();
+                if(isShowRLMediaController ==false){
+                    showRLMediaController();
+
+                    handler.sendEmptyMessageDelayed(HIDE_RLMEDIACONTROLLER,4000);
+
+                }else {
+
+                    hideRLMediaController();
+                    handler.removeMessages(HIDE_RLMEDIACONTROLLER);
+                }
+                return super.onSingleTapConfirmed(e);
+            }
+        });
     }
 
     class MyReceiver extends BroadcastReceiver{
@@ -420,13 +473,34 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
 
         @Override
         public void onStartTrackingTouch(SeekBar seekBar) {
-
+            handler.removeMessages(HIDE_RLMEDIACONTROLLER);
         }
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-
+            handler.sendEmptyMessageDelayed(HIDE_RLMEDIACONTROLLER,4000);
         }
+    }
+
+
+
+    private void showRLMediaController(){
+
+        rl_media_Controller.setVisibility(View.VISIBLE);
+        isShowRLMediaController = true;
+    }
+
+    private void hideRLMediaController(){
+
+        rl_media_Controller.setVisibility(View.GONE);
+        isShowRLMediaController = false;
+    }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        gestureDetector.onTouchEvent(event);
+        return super.onTouchEvent(event);
     }
 
     @Override
