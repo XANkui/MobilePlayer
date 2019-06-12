@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.DisplayMetrics;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,11 +23,12 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.VideoView;
+
 
 import com.example.xan.mobileplayer.R;
 import com.example.xan.mobileplayer.domain.MediaItem;
 import com.example.xan.mobileplayer.utils.Utils;
+import com.example.xan.mobileplayer.view.VideoView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -38,6 +40,10 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
 
     private static final int PROGRESS =1;
     private static final int HIDE_RLMEDIACONTROLLER =2;
+    private static final int FULL_SCREEN =1;
+    private static final int DEFAULT_SCREEN =2;
+
+
 
     private VideoView vv_videoview;
     private Uri uri;
@@ -47,6 +53,13 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
     private int videoIndex;
     private GestureDetector gestureDetector;
     private boolean isShowRLMediaController = false;
+    private boolean isFullScreeen = false;
+
+    private int screenWidth =0;
+    private int screenHeight =0;
+
+    private  int videoWidth =0;
+    private  int videoHeight =0;
 
     private RelativeLayout rl_media_Controller;
     private LinearLayout llTop;
@@ -130,6 +143,7 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
 
         } else if ( v == btnSwitchScreen ) {
             // Handle clicks for btnSwitchScreen
+            setScreenFullOrDefault();
         }
 
         handler.removeMessages(HIDE_RLMEDIACONTROLLER);
@@ -284,8 +298,8 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
         super.onCreate(savedInstanceState);
 
         initData();
-
         findViews();
+
 
 
         setListener();
@@ -349,8 +363,13 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 Toast.makeText(SystemVideoPlayer.this,"我被双击了", Toast.LENGTH_SHORT).show();
+
+                setScreenFullOrDefault();
+
                 return super.onDoubleTap(e);
             }
+
+
 
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
@@ -368,6 +387,61 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
                 return super.onSingleTapConfirmed(e);
             }
         });
+
+        // 该方法过时了
+//        screenWidth = getWindowManager().getDefaultDisplay().getWidth();
+//        screenHeight = getWindowManager().getDefaultDisplay().getHeight();
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        screenWidth = displayMetrics.widthPixels;
+        screenHeight = displayMetrics.heightPixels;
+    }
+
+    private void setScreenFullOrDefault() {
+        if(isFullScreeen == true){
+
+            setVideoType(DEFAULT_SCREEN);
+        }else{
+
+            setVideoType(FULL_SCREEN);
+
+        }
+    }
+
+    private void setVideoType(int screenSize) {
+
+        switch (screenSize){
+            case FULL_SCREEN:
+
+                isFullScreeen = true;
+                vv_videoview.setVideoSize(screenWidth,screenHeight);
+                btnVideoSwitchPlayer.setBackgroundResource(R.drawable.btn_switch_default_screen_selector);
+
+                break;
+
+            case DEFAULT_SCREEN:
+                isFullScreeen = false;
+
+                int mVideoWidth = videoWidth;
+                int mVideoHeight = videoHeight;
+                int width = screenWidth;
+                int height = screenHeight;
+
+                // for compatibility, we adjust size based on aspect ratio
+                if ( mVideoWidth * height  < width * mVideoHeight ) {
+                    //Log.i("@@@", "image too wide, correcting");
+                    width = height * mVideoWidth / mVideoHeight;
+                } else if ( mVideoWidth * height  > width * mVideoHeight ) {
+                    //Log.i("@@@", "image too tall, correcting");
+                    height = width * mVideoHeight / mVideoWidth;
+                }
+
+                vv_videoview.setVideoSize(width,height);
+                btnVideoSwitchPlayer.setBackgroundResource(R.drawable.btn_switch_full_screen_selector);
+                break;
+
+        }
     }
 
     class MyReceiver extends BroadcastReceiver{
@@ -427,6 +501,9 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
 
         @Override
         public void onPrepared(MediaPlayer mp) {
+            videoWidth = mp.getVideoWidth();
+            videoHeight = mp.getVideoHeight();
+
             vv_videoview.start();
 
             int duration = vv_videoview.getDuration();
@@ -434,6 +511,8 @@ public class SystemVideoPlayer extends Activity implements View.OnClickListener 
             tvVideoDuration.setText(utils.stringForTime(duration));
 
             handler.sendEmptyMessage(PROGRESS);
+
+            setVideoType(DEFAULT_SCREEN);
 
         }
     }
